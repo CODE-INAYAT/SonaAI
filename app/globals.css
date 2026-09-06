@@ -1,0 +1,459 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   SonaAI Design Tokens — DESIGN.md (Multilingo-inspired)
+   Dark forest-green base + Verdant Lime accent
+   Manrope display / Inter body / system nav
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand palette ── */
+  --es-page-bg: #031A10;
+  --es-footer-bg: #021510;
+  --es-panel-bg: #052329;
+  --es-panel-bg-2: #102C32;
+  --es-action-primary: #D0FFA2;
+  --es-on-primary: #031A10;
+  --es-text-primary: #FFFFFF;
+  --es-text-secondary: #B2B2B2;
+  --es-text-muted: #707070;
+  --es-border-subtle: #264348;
+  --es-surface-white: #FFFFFF;
+  --es-surface-muted: #F5F5F5;
+
+  /* ── No shadows — depth via surface color (DESIGN.md strategy) ── */
+  --es-card-shadow: none;
+  --es-input-shadow: none;
+
+  /* ── Radii (DESIGN.md scale) ── */
+  --es-radius-sm: 4px;
+  --es-radius-md: 8px;
+  --es-radius-lg: 12px;
+  --es-radius-pill: 30px;
+  --es-radius-xl: 32px;
+  --es-radius-2xl: 40px;
+  --es-radius-3xl: 48px;
+  --es-radius-full: 9999px;
+
+  /* ── Spacing (hybrid 4px/8px) ── */
+  --es-spacing-1: 4px;
+  --es-spacing-2: 8px;
+  --es-spacing-3: 10px;
+  --es-spacing-4: 12px;
+  --es-spacing-5: 16px;
+  --es-spacing-6: 20px;
+  --es-spacing-7: 24px;
+  --es-spacing-8: 32px;
+  --es-spacing-9: 40px;
+  --es-spacing-section: 72px;
+  --es-spacing-section-lg: 80px;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Light theme variables for shadcn/Agora components that depend on HSL tokens */
+:root {
+  color-scheme: dark;
+
+  --background:       146 80% 4%;
+  --surface:          189 70% 9%;
+  --surface-elevated: 189 52% 13%;
+
+  --card:             189 70% 9%;
+  --card-foreground:  0 0% 100%;
+  --popover:          189 52% 13%;
+  --popover-foreground: 0 0% 100%;
+  --muted:            189 52% 13%;
+
+  --border:           189 32% 22%;
+  --input:            189 32% 22%;
+
+  --foreground:       0 0% 100%;
+  --muted-foreground: 0 0% 44%;
+
+  --primary:            90 100% 82%;
+  --primary-foreground: 146 80% 4%;
+
+  --secondary:            189 52% 13%;
+  --secondary-foreground: 0 0% 100%;
+
+  --accent:            90 100% 82%;
+  --accent-foreground: 146 80% 4%;
+
+  --destructive:            0 72% 52%;
+  --destructive-foreground: 0 0% 100%;
+
+  --ring: 90 100% 82%;
+
+  --radius: 0.5rem;
+
+  --chart-1: 90 100% 82%;
+  --chart-2: 189 32% 45%;
+  --chart-3: 189 32% 35%;
+  --chart-4: 0 72% 52%;
+  --chart-5: 150 50% 40%;
+
+  --sidebar-background:         189 70% 9%;
+  --sidebar-foreground:         0 0% 100%;
+  --sidebar-primary:            90 100% 82%;
+  --sidebar-primary-foreground: 146 80% 4%;
+  --sidebar-accent:             189 52% 13%;
+  --sidebar-accent-foreground:  0 0% 100%;
+  --sidebar-border:             189 32% 22%;
+  --sidebar-ring:               90 100% 82%;
+
+  --viz-stop-1: 90 100% 82%;
+  --viz-stop-2: 189 42% 50%;
+  --viz-stop-3: 160 62% 52%;
+
+  --font-sans: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Scroll Reveal Animation System
+   ═══════════════════════════════════════════════════════════════ */
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-reveal-left {
+  opacity: 0;
+  transform: translateX(-48px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-left.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-reveal-right {
+  opacity: 0;
+  transform: translateX(48px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-right.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-reveal-scale {
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-scale.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.scroll-reveal-blur {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(16px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, filter, transform;
+}
+
+.scroll-reveal-blur.is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.scroll-delay-1 { transition-delay: 80ms; }
+.scroll-delay-2 { transition-delay: 160ms; }
+.scroll-delay-3 { transition-delay: 240ms; }
+.scroll-delay-4 { transition-delay: 320ms; }
+.scroll-delay-5 { transition-delay: 400ms; }
+.scroll-delay-6 { transition-delay: 480ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal,
+  .scroll-reveal-left,
+  .scroll-reveal-right,
+  .scroll-reveal-scale,
+  .scroll-reveal-blur {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Entry Animations
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up-d1 { animation-delay: 60ms; }
+.animate-fade-up-d2 { animation-delay: 120ms; }
+.animate-fade-up-d3 { animation-delay: 180ms; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-up-enter {
+  animation: slide-up-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-scroll-bounce {
+  animation: scroll-bounce 1.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Grid Pattern Background (dark variant)
+   ═══════════════════════════════════════════════════════════════ */
+
+.grid-pattern {
+  background-image:
+    linear-gradient(to right, var(--es-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--es-border-subtle) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.grid-pattern-subtle {
+  background-image:
+    linear-gradient(to right, rgba(38, 67, 72, 0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(38, 67, 72, 0.3) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.grid-pattern-white {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+.grid-fade-b {
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.grid-fade-t {
+  mask-image: linear-gradient(to top, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Frosted Glass Nav (dark variant)
+   ═══════════════════════════════════════════════════════════════ */
+
+.nav-glass {
+  background: rgba(3, 26, 16, 0.82);
+  backdrop-filter: blur(17px) saturate(1.2);
+  -webkit-backdrop-filter: blur(17px) saturate(1.2);
+  border-bottom: 1px solid var(--es-border-subtle);
+}
+
+.nav-glass-scrolled {
+  background: rgba(3, 26, 16, 0.95);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MicButtonWithVisualizer: force a true circle
+   ═══════════════════════════════════════════════════════════════ */
+
+.conversation-mic-host {
+  flex-shrink: 0;
+}
+.conversation-mic-host > button {
+  aspect-ratio: 1 / 1;
+  width: 3rem;
+  height: 3rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  max-width: 3rem;
+  max-height: 3rem;
+  border-radius: 9999px;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+@media (min-width: 640px) {
+  .conversation-mic-host > button {
+    width: 3.5rem;
+    height: 3.5rem;
+    min-width: 3.5rem;
+    min-height: 3.5rem;
+    max-width: 3.5rem;
+    max-height: 3.5rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Meeting Room — Google Meet Control Bar
+   ═══════════════════════════════════════════════════════════════ */
+
+.meeting-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  border: 1px solid var(--es-border-subtle);
+  background: var(--es-panel-bg-2);
+  color: var(--es-text-primary);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.meeting-control-btn:hover {
+  background: var(--es-panel-bg);
+  transform: scale(1.05);
+}
+
+.meeting-control-btn.active {
+  background: var(--es-action-primary);
+  color: var(--es-on-primary);
+  border-color: var(--es-action-primary);
+}
+
+.meeting-control-btn.destructive {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.meeting-control-btn.destructive:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+/* Chat sidebar slide animation */
+.chat-sidebar-enter {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Custom Scrollbar (Theme aligned)
+   ═══════════════════════════════════════════════════════════════ */
+
+html, body, .custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(208, 255, 162, 0.4) rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar, .custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track, .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb, .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(208, 255, 162, 0.4); /* Lime Green transparent */
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover, .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(208, 255, 162, 0.8); /* Lime Green more opaque */
+}
