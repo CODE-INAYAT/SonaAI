@@ -661,30 +661,47 @@ export default function ConversationComponent({
     return getCurrentInProgressMessage(transcript);
   }, [transcript]);
 
-  // Setup local tracks
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(isReady);
   const { localCameraTrack } = useLocalCameraTrack(isReady && isVideoEnabled);
-  const screenShareResult = useLocalScreenTrack(isReady && isScreenShareEnabled, {}, "disable");
-  // Some versions of agora-rtc-react return screenTrack, others return localVideoTrack for screens
-  const localScreenTrack = (screenShareResult as any)?.screenTrack || (screenShareResult as any)?.localVideoTrack || null;
+  
+  // Destructure screenTrack directly to avoid SWC compiler parsing bugs with 'as any'
+  const { screenTrack: localScreenTrack } = useLocalScreenTrack(isReady && isScreenShareEnabled, {}, "disable");
 
-  // Publish tracks: Agora standard web client only supports 1 video track at a time
-  // If screen sharing is active, we prioritize it over the camera track
-  const tracksToPublish = useMemo(() => {
-    const tracks = [];
-    if (localMicrophoneTrack && isEnabled) tracks.push(localMicrophoneTrack);
-    
-    if (isScreenShareEnabled && localScreenTrack) {
-      tracks.push(localScreenTrack);
-    } else if (isVideoEnabled && localCameraTrack) {
-      tracks.push(localCameraTrack);
-    }
-    
-    return tracks;
-  }, [localMicrophoneTrack, isEnabled, localCameraTrack, isVideoEnabled, localScreenTrack, isScreenShareEnabled]);
+  // Handle microphone publishing via standard hook
+  usePublish(
+    connectionState === "CONNECTED" && localMicrophoneTrack && isEnabled
+      ? [localMicrophoneTrack]
+      : []
+  );
 
-  // Wait for the client to connect before attempting to publish
-  usePublish(connectionState === "CONNECTED" ? tracksToPublish : []);
+  // Handle video publishing manually to avoid CAN_NOT_PUBLISH_MULTIPLE_VIDEO_TRACKS race conditions
+  const publishedVideoTrackRef = useRef<any>(null);
+  
+  useEffect(() => {
+    if (connectionState !== "CONNECTED") return;
+    
+    const desiredVideoTrack = (isScreenShareEnabled && localScreenTrack) 
+      ? localScreenTrack 
+      : (isVideoEnabled && localCameraTrack ? localCameraTrack : null);
+      
+    if (publishedVideoTrackRef.current === desiredVideoTrack) return;
+    
+    const swapTracks = async () => {
+      try {
+        if (publishedVideoTrackRef.current) {
+          await client.unpublish(publishedVideoTrackRef.current);
+          publishedVideoTrackRef.current = null;
+        }
+        if (desiredVideoTrack) {
+          await client.publish(desiredVideoTrack);
+          publishedVideoTrackRef.current = desiredVideoTrack;
+        }
+      } catch (err) {
+        console.error("Failed to swap video tracks:", err);
+      }
+    };
+    
+    void swapTracks();
+  }, [client, connectionState, isScreenShareEnabled, localScreenTrack, isVideoEnabled, localCameraTrack]);
 
   useClientEvent(client, "user-joined", (user) => {
     if (user.uid.toString() === agentUID) setIsAgentConnected(true);
@@ -767,6 +784,10 @@ export default function ConversationComponent({
   }, [localCameraTrack, isVideoEnabled, isScreenShareEnabled]);
 
   const handleScreenShareToggle = useCallback(async () => {
+    if (!isScreenShareEnabled) {
+      // Turn off camera UI state if we are about to start sharing screen
+      setIsVideoEnabled(false);
+    }
     setIsScreenShareEnabled(!isScreenShareEnabled);
   }, [isScreenShareEnabled]);
 
@@ -947,11 +968,6 @@ export default function ConversationComponent({
           aria-label="AI agent status visualization"
         >
           <SonaAIExpression state={visualizerState} size="lg" />
-          {remoteUsers.map((user) => (
-            <div key={user.uid} className="hidden">
-              <RemoteUser user={user} />
-            </div>
-          ))}
         </div>
       }
       controls={

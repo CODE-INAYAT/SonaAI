@@ -17,6 +17,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import type { ParticipantPresence } from "@/types/conversation";
+import { LocalVideoTrack, RemoteUser, RemoteVideoTrack } from "agora-rtc-react";
 
 export type ClassroomConversationLayoutProps = {
   statusPanel: ReactNode;
@@ -44,6 +45,15 @@ export type ClassroomConversationLayoutProps = {
   inviteCopied?: boolean;
   chatInput: ReactNode;
   onEndConversation: () => void;
+  isVideoEnabled?: boolean;
+  isScreenShareEnabled?: boolean;
+  isHandRaised?: boolean;
+  onVideoToggle?: () => void;
+  onScreenShareToggle?: () => void;
+  onRaiseHandToggle?: () => void;
+  localCameraTrack?: any;
+  localScreenTrack?: any;
+  remoteUsers?: any[];
 };
 
 /** mm:ss, or h:mm:ss once a class runs long. */
@@ -75,6 +85,15 @@ export function ClassroomConversationLayout({
   inviteCopied = false,
   chatInput,
   onEndConversation,
+  isVideoEnabled,
+  isScreenShareEnabled,
+  isHandRaised,
+  onVideoToggle,
+  onScreenShareToggle,
+  onRaiseHandToggle,
+  localCameraTrack,
+  localScreenTrack,
+  remoteUsers = [],
 }: ClassroomConversationLayoutProps) {
   const [activeTab, setActiveTab] = useState<
     "ai" | "notes" | "transcript" | "qa"
@@ -99,6 +118,17 @@ export function ClassroomConversationLayout({
     border: "1px solid rgba(255, 255, 255, 0.4)",
     boxShadow: "0 8px 32px rgba(0,0,0,0.05)",
   };
+
+
+  const activeRemoteVideoUser = remoteUsers.find(u => u.hasVideo);
+  
+  // Decide who takes the Main Stage to prevent track stealing
+  const showLocalScreenInMain = isScreenShareEnabled && !!localScreenTrack;
+  const showRemoteInMain = !showLocalScreenInMain && !!activeRemoteVideoUser;
+  const showLocalCameraInMain = !showLocalScreenInMain && !showRemoteInMain && isVideoEnabled && !!localCameraTrack;
+
+  // We use the Zoom-style layout if there are any remote users OR if we have local video active
+  const useZoomLayout = remoteUsers.length > 0 || isVideoEnabled || isScreenShareEnabled;
 
   return (
     <div className="flex h-screen w-full flex-col bg-[#F8F9FA] relative">
@@ -167,64 +197,112 @@ export function ClassroomConversationLayout({
 
       {/* Main Content Area */}
       <div className="flex flex-1 min-h-0 gap-4 p-4 pt-0">
-        {/* Left Stage (Video Grid) */}
+        {/* Left Stage (Video Grid / Speaker View) */}
         <div className="flex-1 flex flex-col relative rounded-[32px] overflow-hidden bg-[#0B0C10] shadow-2xl p-4 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full pb-24 w-full max-w-5xl mx-auto">
-            {/* Tile 1: You (Teacher) */}
-            <div className="relative rounded-2xl overflow-hidden flex items-center justify-center bg-[#1F2833]">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#D0FFA2] text-4xl font-black text-[#031A10]">
-                {teacherName.trim().charAt(0).toUpperCase()}
-              </div>
-              <div className="absolute top-3 left-3 bg-[#D0FFA2] text-[#031A10] text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                Speaking{" "}
-                <div className="flex gap-0.5">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-0.5 h-2 bg-[#031A10] rounded-full animate-pulse-subtle"
-                    />
-                  ))}
-                </div>
-              </div>
-              <span className="absolute bottom-3 left-3 text-white text-sm font-semibold drop-shadow-md">
-                {teacherName} (Teacher)
-              </span>
-            </div>
-
-            {participants
-              .filter((participant) => participant.role === "student")
-              .map((participant) => (
-                <div
-                  key={participant.uid}
-                  className="relative flex min-h-40 items-center justify-center overflow-hidden rounded-2xl bg-[#202A35]"
-                >
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/90 text-3xl font-black text-[#17305F]">
-                    {participant.name.trim().charAt(0).toUpperCase()}
+          <div className={`h-full w-full pb-24 ${useZoomLayout ? "flex flex-col gap-4" : "grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto"}`}>
+            
+            {/* 1. Zoom-style Main Speaker / Presentation View */}
+            {useZoomLayout ? (
+              <div className="flex-1 min-h-[50vh] relative rounded-2xl overflow-hidden bg-black flex items-center justify-center shadow-inner">
+                {showLocalScreenInMain ? (
+                  <LocalVideoTrack track={localScreenTrack} play={true} className="w-full h-full object-contain" />
+                ) : showRemoteInMain ? (
+                  <RemoteUser user={activeRemoteVideoUser!} playVideo={true} playAudio={false} className="w-full h-full object-contain" />
+                ) : showLocalCameraInMain ? (
+                  <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center">
+                    {visualizer}
+                    <span className="mt-4 text-white/50 font-medium">Waiting for video feeds...</span>
                   </div>
-                  <span className="absolute bottom-3 left-3 flex items-center gap-2 text-sm font-semibold text-white drop-shadow-md">
-                    {participant.name}{" "}
-                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase">
-                      Student
-                    </span>
+                )}
+                {/* Floating AI Badge on Main View */}
+                {aiStateBadge && (
+                  <div className="absolute top-4 left-4 z-10 bg-black/40 backdrop-blur-md rounded-xl p-2 border border-white/10 shadow-lg">
+                    {aiStateBadge}
+                    <div className="text-white/70 text-xs mt-1 font-semibold flex items-center gap-1">
+                       <Sparkles className="w-3 h-3 text-[#D0FFA2]" /> SonaAI Observing
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Fallback 2-Grid when no video is active (Legacy layout for audio-only) */
+              <>
+                <div className="relative rounded-2xl overflow-hidden flex items-center justify-center bg-[#1F2833]">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#D0FFA2] text-4xl font-black text-[#031A10]">
+                    {teacherName.trim().charAt(0).toUpperCase()}
+                  </div>
+                  <span className="absolute bottom-3 left-3 text-white text-sm font-semibold drop-shadow-md">
+                    {teacherName} (You)
                   </span>
                 </div>
-              ))}
+                <div className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center bg-[#052329] border border-[#D0FFA2]/30">
+                  <div className="flex items-center justify-center">
+                    {visualizer}
+                  </div>
+                  {aiStateBadge && (
+                    <div className="absolute top-3 left-3">{aiStateBadge}</div>
+                  )}
+                  <span className="absolute bottom-3 left-3 text-[#D0FFA2] text-sm font-semibold flex items-center gap-1.5 drop-shadow-md">
+                    <Sparkles className="w-3.5 h-3.5" /> SonaAI
+                  </span>
+                </div>
+              </>
+            )}
 
-            {/* Tile 2: SonaAI */}
-            <div className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center bg-[#052329] border border-[#D0FFA2]/30">
-              <div className="flex items-center justify-center">
-                {visualizer}
+            {/* 2. Zoom-style Participant Strip (Bottom/Side) */}
+            {useZoomLayout && (
+              <div className="h-32 shrink-0 flex gap-3 overflow-x-auto custom-scrollbar px-2 pb-2">
+                
+                {/* Local User Thumbnail */}
+                <div className="relative h-full aspect-video rounded-xl overflow-hidden bg-[#1F2833] border-2 border-transparent hover:border-[#D0FFA2]/50 transition-colors shrink-0">
+                  {isVideoEnabled && localCameraTrack && !showLocalCameraInMain ? (
+                    <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#1F2833]">
+                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D0FFA2] text-xl font-black text-[#031A10]">
+                        {teacherName.trim().charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                  )}
+                  <span className="absolute bottom-1.5 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] text-white font-medium">
+                    You
+                  </span>
+                </div>
+
+                {/* Remote Users Thumbnails */}
+                {remoteUsers.map((user) => {
+                  const isMainStageUser = showRemoteInMain && activeRemoteVideoUser?.uid === user.uid;
+                  
+                  return (
+                    <div key={user.uid} className="relative h-full aspect-video rounded-xl overflow-hidden bg-[#202A35] border-2 border-transparent hover:border-white/20 transition-colors shrink-0">
+                      {/* To avoid track stealing, we only play the video here if it's NOT in the main stage. 
+                          We ALWAYS play audio here to ensure remote audio never drops. */}
+                      <RemoteUser 
+                        user={user} 
+                        playVideo={user.hasVideo && !isMainStageUser} 
+                        playAudio={true} 
+                        className={user.hasVideo && !isMainStageUser ? "w-full h-full object-cover" : "hidden"} 
+                      />
+                      
+                      {/* Fallback avatar if this user is in the main stage, or has no video */}
+                      {(!user.hasVideo || isMainStageUser) && (
+                        <div className="w-full h-full flex items-center justify-center bg-[#202A35]">
+                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl font-black text-white/50">
+                            {user.uid.toString().charAt(0).toUpperCase()}
+                          </div>
+                        </div>
+                      )}
+                      <span className="absolute bottom-1.5 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] text-white font-medium">
+                        Participant {user.uid.toString().slice(-4)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              {aiStateBadge && (
-                <div className="absolute top-3 left-3">{aiStateBadge}</div>
-              )}
-              <span className="absolute bottom-3 left-3 text-[#D0FFA2] text-sm font-semibold flex items-center gap-1.5 drop-shadow-md">
-                <Sparkles className="w-3.5 h-3.5" /> SonaAI
-              </span>
-              <div className="absolute top-3 right-3 bg-black/40 rounded-full p-1.5">
-                <MoreHorizontal className="w-4 h-4 text-white" />
-              </div>
-            </div>
+            )}
+            
           </div>
 
           {/* SonaAI asking permission — sits directly above the dock so the teacher's eyes
@@ -250,19 +328,22 @@ export function ClassroomConversationLayout({
               </div>
 
               <button
-                className="w-12 h-12 rounded-full bg-[#3C4043] flex items-center justify-center hover:bg-[#4d5155] transition-colors text-white/80 hover:text-white"
+                onClick={onVideoToggle}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-sm ${isVideoEnabled ? "bg-[#3C4043] hover:bg-[#4d5155] text-white" : "bg-[#EA4335] hover:bg-[#d93025] text-white"}`}
                 title="Camera"
               >
                 <Video className="w-5 h-5" />
               </button>
               <button
-                className="hidden sm:flex w-12 h-12 rounded-full bg-[#3C4043] items-center justify-center hover:bg-[#4d5155] transition-colors text-white/80 hover:text-white"
+                onClick={onRaiseHandToggle}
+                className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-colors shadow-sm ${isHandRaised ? "bg-yellow-500 hover:bg-yellow-600 text-black" : "bg-[#3C4043] hover:bg-[#4d5155] text-white"}`}
                 title="Raise Hand"
               >
                 <Hand className="w-5 h-5" />
               </button>
               <button
-                className="hidden md:flex w-12 h-12 rounded-full bg-[#3C4043] items-center justify-center hover:bg-[#4d5155] transition-colors text-white/80 hover:text-white"
+                onClick={onScreenShareToggle}
+                className={`hidden md:flex w-12 h-12 rounded-full items-center justify-center transition-colors shadow-sm ${isScreenShareEnabled ? "bg-[#D0FFA2] hover:bg-[#bbf08a] text-[#031A10]" : "bg-[#3C4043] hover:bg-[#4d5155] text-white"}`}
                 title="Share Screen"
               >
                 <MonitorUp className="w-5 h-5" />

@@ -186,6 +186,17 @@ export default function MeetingPage() {
     void handleJoinInternal(userSession);
   }, [isReady, userSession]);
 
+  // Clean up RTM client on unmount or fast refresh to prevent "Ins id is 2" / mutual kick errors
+  useEffect(() => {
+    return () => {
+      if (rtmClient) {
+        rtmClient.logout().catch((err) => 
+          console.warn("Failed to logout RTM client on unmount:", err)
+        );
+      }
+    };
+  }, [rtmClient]);
+
   const handleTranscriptTurn = useCallback(
     (turn: import("@/types/conversation").TranscriptTurn) => {
       sessionTranscriptLog.current = [...sessionTranscriptLog.current, turn];
