@@ -287,7 +287,8 @@ export default function ConversationComponent({
   // synchronously before the timeout, so only the real second mount's timer fires.
   // Do NOT pass `isEnabled` — that ties track lifetime to mute state and breaks the Web Audio
   // graph inside MicButtonWithVisualizer. Mute uses track.setEnabled() only.
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(isReady);
+  const micResult = useLocalMicrophoneTrack(isReady);
+  const localMicrophoneTrack = micResult ? (micResult as any).localMicrophoneTrack : null;
 
   // ENABLE_AUDIO_PTS is a module-level SDK parameter (not on the client instance).
   // It must be set before publishing audio for transcript timing to be accurate.
@@ -661,10 +662,18 @@ export default function ConversationComponent({
     return getCurrentInProgressMessage(transcript);
   }, [transcript]);
 
-  const { localCameraTrack } = useLocalCameraTrack(isReady && isVideoEnabled);
+  const cameraResult = useLocalCameraTrack(isReady && isVideoEnabled);
+  const localCameraTrack = cameraResult ? (cameraResult as any).localCameraTrack : null;
   
-  // Destructure screenTrack directly to avoid SWC compiler parsing bugs with 'as any'
-  const { screenTrack: localScreenTrack } = useLocalScreenTrack(isReady && isScreenShareEnabled, {}, "disable");
+  const screenShareResult = useLocalScreenTrack(isReady && isScreenShareEnabled, {}, "disable");
+  let localScreenTrack = null;
+  if (screenShareResult) {
+    if ('screenTrack' in screenShareResult) {
+      localScreenTrack = (screenShareResult as any).screenTrack;
+    } else if ('localVideoTrack' in screenShareResult) {
+      localScreenTrack = (screenShareResult as any).localVideoTrack;
+    }
+  }
 
   // Handle microphone publishing via standard hook
   usePublish(
